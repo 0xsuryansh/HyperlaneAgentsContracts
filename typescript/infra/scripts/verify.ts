@@ -4,6 +4,7 @@ import {
   VerificationInput,
 } from '@hyperlane-xyz/sdk';
 
+import { extractSource, fetchExplorerApiKeys } from '../src/deployment/verify';
 import { fetchGCPSecret } from '../src/utils/gcloud';
 import { readJSONAtPath } from '../src/utils/utils';
 
@@ -36,30 +37,11 @@ async function main() {
   const verification: ChainMap<VerificationInput> =
     readJSONAtPath(verificationArtifact);
 
-  // check provided artifact is JSON
-  const sourcePath = buildArtifact!;
-  if (!sourcePath.endsWith('.json')) {
-    throw new Error('Source must be a JSON file.');
-  }
+  // extract source from build artifact
+  const { source, compilerversion } = extractSource(buildArtifact);
 
-  // parse build artifacts for std input json + solc version
-  const buildArtifactJson = readJSONAtPath(sourcePath);
-  const source = buildArtifactJson.input;
-  const solcLongVersion = buildArtifactJson.solcLongVersion;
-  const compilerversion = `v${solcLongVersion}`;
-
-  // check solc version is in the right format
-  const versionRegex = /v(\d.\d.\d+)\+commit.\w+/;
-  const matches = versionRegex.exec(compilerversion);
-  if (!matches) {
-    throw new Error(`Invalid compiler version ${compilerversion}`);
-  }
-
-  // fetch API keys from GCP
-  const apiKeys: ChainMap<string> = (await fetchGCPSecret(
-    'explorer-api-keys',
-    true,
-  )) as any;
+  // fetch explorer API keys from GCP
+  const apiKeys = await fetchExplorerApiKeys();
 
   // instantiate verifier
   const verifier = new PostDeploymentContractVerifier(

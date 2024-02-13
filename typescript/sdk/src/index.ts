@@ -87,6 +87,7 @@ export {
   ViolationType,
 } from './deploy/types';
 export { PostDeploymentContractVerifier } from './deploy/verify/PostDeploymentContractVerifier';
+export { ContractVerifier } from './deploy/verify/ContractVerifier';
 export {
   CompilerOptions,
   ContractVerificationInput,
