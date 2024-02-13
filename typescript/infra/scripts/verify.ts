@@ -7,35 +7,37 @@ import {
 import { fetchGCPSecret } from '../src/utils/gcloud';
 import { readJSONAtPath } from '../src/utils/utils';
 
-import { assertEnvironment, getArgs } from './agent-utils';
+import {
+  assertEnvironment,
+  getArgs,
+  withBuildArtifact,
+  withNetwork,
+} from './agent-utils';
 import { getEnvironmentConfig } from './core-utils';
 
 async function main() {
-  const argv = await getArgs()
-    .string('source')
-    .describe(
-      'source',
-      'Path to hardhat build artifact containing standard input JSON',
-    )
-    .demandOption('source')
-    .string('artifacts')
-    .describe('artifacts', 'verification artifacts JSON file')
-    .demandOption('artifacts')
-    .string('network')
-    .describe('network', 'optional target network').argv;
+  const { environment, buildArtifact, verificationArtifact, network } =
+    await withNetwork(withBuildArtifact(getArgs()))
+      .string('verificationArtifact')
+      .describe(
+        'verificationArtifact',
+        'path to hyperlane verification artifact',
+      )
+      .alias('v', 'verificationArtifact')
+      .demandOption('verificationArtifact')
+      .demandOption('buildArtifact').argv;
 
   // set up multiprovider
-  const environment = assertEnvironment(argv.e!);
+  assertEnvironment(environment);
   const config = getEnvironmentConfig(environment);
   const multiProvider = await config.getMultiProvider();
 
   // grab verification artifacts
-  const verification: ChainMap<VerificationInput> = readJSONAtPath(
-    argv.artifacts!,
-  );
+  const verification: ChainMap<VerificationInput> =
+    readJSONAtPath(verificationArtifact);
 
   // check provided artifact is JSON
-  const sourcePath = argv.source!;
+  const sourcePath = buildArtifact!;
   if (!sourcePath.endsWith('.json')) {
     throw new Error('Source must be a JSON file.');
   }
@@ -73,7 +75,7 @@ async function main() {
 
   // verify all the things
   const failedResults = (
-    await verifier.verify(argv.network ? [argv.network] : undefined)
+    await verifier.verify(network ? [network] : undefined)
   ).filter((result) => result.status === 'rejected');
 
   // only log the failed verifications to console

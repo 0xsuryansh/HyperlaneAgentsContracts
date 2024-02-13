@@ -32,6 +32,7 @@ import {
   getArgs,
   getContractAddressesSdkFilepath,
   getModuleDirectory,
+  withBuildArtifact,
   withContext,
   withModuleAndFork,
   withNetwork,
@@ -45,7 +46,10 @@ async function main() {
     fork,
     environment,
     network,
-  } = await withContext(withNetwork(withModuleAndFork(getArgs()))).argv;
+    buildArtifact,
+  } = await withContext(
+    withNetwork(withModuleAndFork(withBuildArtifact(getArgs()))),
+  ).argv;
   const envConfig = getEnvironmentConfig(environment);
   const env = deployEnvToSdkEnv[environment];
 
