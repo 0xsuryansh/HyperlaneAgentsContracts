@@ -44,6 +44,7 @@ export class HyperlaneCoreDeployer extends HyperlaneDeployer<
       multiProvider,
       {},
       ismFactory,
+      contractVerifier,
     );
   }
 
