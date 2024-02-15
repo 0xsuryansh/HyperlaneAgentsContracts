@@ -2,6 +2,7 @@ import { Debugger, debug } from 'debug';
 import { Contract, PopulatedTransaction, ethers } from 'ethers';
 
 import {
+  BuildInfo,
   IPostDispatchHook,
   IPostDispatchHook__factory,
   ITransparentUpgradeableProxy,
@@ -42,7 +43,7 @@ import {
 } from './proxy';
 import { OwnableConfig } from './types';
 import { ContractVerifier } from './verify/ContractVerifier';
-import { ContractVerificationInput } from './verify/types';
+import { ContractVerificationInput, ExplorerLicenseType } from './verify/types';
 import {
   buildVerificationInput,
   getContractVerificationInput,
@@ -79,6 +80,29 @@ export abstract class HyperlaneDeployer<
     if (this.options?.ismFactory) {
       this.options.ismFactory.deployContractFromFactory =
         this.deployContractFromFactory.bind(this);
+    }
+
+    if (!this.options?.contractVerifier) {
+      // Extract the source and compiler version from the build artifact
+      const source = JSON.stringify(BuildInfo.input);
+      const solcLongVersion = BuildInfo.solcLongVersion;
+      const compilerversion = `v${solcLongVersion}`;
+
+      const versionRegex = /v(\d.\d.\d+)\+commit.\w+/;
+      const matches = versionRegex.exec(compilerversion);
+      if (!matches) {
+        throw new Error(`Invalid compiler version ${compilerversion}`);
+      }
+
+      // set deployer options if not defined
+      this.options = {
+        ...this.options,
+        // instantiate verifier
+        contractVerifier: new ContractVerifier(multiProvider, {}, source, {
+          compilerversion,
+          licenseType: ExplorerLicenseType.MIT,
+        }),
+      };
     }
   }
 
