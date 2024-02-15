@@ -25,7 +25,10 @@ import { aggregationIsm } from '../config/routingIsm';
 import { deployEnvToSdkEnv } from '../src/config/environment';
 import { deployWithArtifacts } from '../src/deployment/deploy';
 import { TestQuerySenderDeployer } from '../src/deployment/testcontracts/testquerysender';
-import { extractSource, fetchExplorerApiKeys } from '../src/deployment/verify';
+import {
+  extractBuildArtifact,
+  fetchExplorerApiKeys,
+} from '../src/deployment/verify';
 import { impersonateAccount, useLocalProvider } from '../src/utils/fork';
 
 import {
@@ -35,7 +38,7 @@ import {
   getArgs,
   getContractAddressesSdkFilepath,
   getModuleDirectory,
-  withBuildArtifact,
+  withBuildArtifactPath,
   withContext,
   withModuleAndFork,
   withNetwork,
@@ -49,9 +52,9 @@ async function main() {
     fork,
     environment,
     network,
-    buildArtifact,
+    buildArtifactPath,
   } = await withContext(
-    withNetwork(withModuleAndFork(withBuildArtifact(getArgs()))),
+    withNetwork(withModuleAndFork(withBuildArtifactPath(getArgs()))),
   ).argv;
   const envConfig = getEnvironmentConfig(environment);
   const env = deployEnvToSdkEnv[environment];
@@ -69,16 +72,18 @@ async function main() {
   }
 
   let contractVerifier;
-  if (buildArtifact) {
-    // extract source from build artifact
-    const { source, compilerversion } = extractSource(buildArtifact);
+  if (buildArtifactPath) {
     // fetch explorer API keys from GCP
     const apiKeys = await fetchExplorerApiKeys();
+    // extract build artifact contents
+    const buildArtifact = extractBuildArtifact(buildArtifactPath);
     // instantiate verifier
-    contractVerifier = new ContractVerifier(multiProvider, apiKeys, source, {
-      compilerversion,
-      licenseType: ExplorerLicenseType.MIT,
-    });
+    contractVerifier = new ContractVerifier(
+      multiProvider,
+      apiKeys,
+      buildArtifact,
+      ExplorerLicenseType.MIT,
+    );
   }
 
   let config: ChainMap<unknown> = {};
