@@ -58,6 +58,30 @@ export class HyperlaneIsmFactory extends HyperlaneApp<ProxyFactoryFactories> {
   // TODO: fix this in the next refactoring
   public deployedIsms: ChainMap<any> = {};
 
+  // upon initialization, HyperlaneDeployer will bind itself to HyperlaneIsmFactory
+  deployContractFromFactory?: <F extends ethers.ContractFactory>(
+    chain: string,
+    factory: F,
+    contractName: string,
+    constructorArgs: Parameters<F['deploy']>,
+    initializeArgs?:
+      | Parameters<Awaited<ReturnType<F['deploy']>>['initialize']>
+      | undefined,
+    shouldRecover?: boolean,
+  ) => Promise<ReturnType<F['deploy']>>;
+
+  assertDeployContractFromFactoryIsDefined(): asserts this is {
+    deployContractFromFactory: NonNullable<
+      HyperlaneIsmFactory['deployContractFromFactory']
+    >;
+  } {
+    if (!this.deployContractFromFactory) {
+      throw new Error(
+        'IsmFactory not initialised. HyperlaneDeployer must bind deployContractFromFactory to the IsmFactory.',
+      );
+    }
+  }
+
   static fromEnvironment<Env extends HyperlaneEnvironment>(
     env: Env,
     multiProvider: MultiProvider,
@@ -93,6 +117,8 @@ export class HyperlaneIsmFactory extends HyperlaneApp<ProxyFactoryFactories> {
     mailbox?: Address;
     existingIsmAddress?: Address;
   }): Promise<DeployedIsm> {
+    this.assertDeployContractFromFactoryIsDefined();
+
     const { destination, config, origin, mailbox, existingIsmAddress } = params;
     if (typeof config === 'string') {
       // @ts-ignore
@@ -138,23 +164,26 @@ export class HyperlaneIsmFactory extends HyperlaneApp<ProxyFactoryFactories> {
         });
         break;
       case IsmType.OP_STACK:
-        contract = await this.multiProvider.handleDeploy(
+        contract = await this.deployContractFromFactory(
           destination,
           new OPStackIsm__factory(),
+          IsmType.OP_STACK,
           [config.nativeBridge],
         );
         break;
       case IsmType.PAUSABLE:
-        contract = await this.multiProvider.handleDeploy(
+        contract = await this.deployContractFromFactory(
           destination,
           new PausableIsm__factory(),
+          IsmType.PAUSABLE,
           [config.owner],
         );
         break;
       case IsmType.TEST_ISM:
-        contract = await this.multiProvider.handleDeploy(
+        contract = await this.deployContractFromFactory(
           destination,
           new TestIsm__factory(),
+          IsmType.TEST_ISM,
           [],
         );
         break;
@@ -185,6 +214,8 @@ export class HyperlaneIsmFactory extends HyperlaneApp<ProxyFactoryFactories> {
     config: MultisigIsmConfig,
     logger: Debugger,
   ): Promise<IMultisigIsm> {
+    this.assertDeployContractFromFactoryIsDefined();
+
     const signer = this.multiProvider.getSigner(destination);
     const multisigIsmFactory =
       config.type === IsmType.MERKLE_ROOT_MULTISIG
@@ -210,6 +241,8 @@ export class HyperlaneIsmFactory extends HyperlaneApp<ProxyFactoryFactories> {
     existingIsmAddress?: Address;
     logger: Debugger;
   }): Promise<IRoutingIsm> {
+    this.assertDeployContractFromFactoryIsDefined();
+
     const { destination, config, mailbox, existingIsmAddress } = params;
     const overrides = this.multiProvider.getTransactionOverrides(destination);
     const routingIsmFactory = this.getContracts(destination).routingIsmFactory;
@@ -374,6 +407,8 @@ export class HyperlaneIsmFactory extends HyperlaneApp<ProxyFactoryFactories> {
     mailbox?: Address;
     logger: Debugger;
   }): Promise<IAggregationIsm> {
+    this.assertDeployContractFromFactoryIsDefined();
+
     const { destination, config, origin, mailbox } = params;
     const signer = this.multiProvider.getSigner(destination);
     const aggregationIsmFactory =
@@ -405,6 +440,8 @@ export class HyperlaneIsmFactory extends HyperlaneApp<ProxyFactoryFactories> {
     logger: Debugger,
     threshold = values.length,
   ): Promise<Address> {
+    this.assertDeployContractFromFactoryIsDefined();
+
     const sorted = [...values].sort();
 
     const address = await factory['getAddress(address[],uint8)'](
