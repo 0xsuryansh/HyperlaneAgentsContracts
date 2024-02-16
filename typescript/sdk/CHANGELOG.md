@@ -1,5 +1,16 @@
 # @hyperlane-xyz/sdk
 
+## 3.7.1
+
+### Patch Changes
+
+- 90191f741: Removed basegoerli and moonbasealpha testnets
+- b3a915466: Add logos for plume to SDK
+- 02e64c9f4: Update viction validator set
+- d2c249674: Minor fixes for SDK cosmos logos
+  - @hyperlane-xyz/core@3.7.1
+  - @hyperlane-xyz/utils@3.7.1
+
 ## 3.7.0
 
 ### Minor Changes

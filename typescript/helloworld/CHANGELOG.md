@@ -1,5 +1,16 @@
 # @hyperlane-xyz/helloworld
 
+## 3.7.1
+
+### Patch Changes
+
+- Updated dependencies [90191f741]
+- Updated dependencies [b3a915466]
+- Updated dependencies [02e64c9f4]
+- Updated dependencies [d2c249674]
+  - @hyperlane-xyz/sdk@3.7.1
+  - @hyperlane-xyz/core@3.7.1
+
 ## 3.7.0
 
 ### Patch Changes
